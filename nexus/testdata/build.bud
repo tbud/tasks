@@ -1,0 +1,21 @@
+import _ "github.com/tbud/tasks/nexus"
+
+Task("default", func() error {
+	err := RunTask("nexus.clean", Config{
+		"repositoryDir": "/Users/mind/.m2/repository/com/ofpay",
+		"jarKeepNum": 10,
+		"warKeepNum": 10,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	#RunTask("nexus.cleantest", Config{
+	#	"repositoryDir": "/Users/mind/.m2/repository",
+	#	"jarKeepNum": 2,
+	#	"warKeepNum": 2,
+	#})
+
+	return nil
+})
