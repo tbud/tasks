@@ -3,7 +3,6 @@ package nexus
 import (
 	"fmt"
 	. "github.com/tbud/bud/context"
-	// . "github.com/tbud/x/config"
 	"github.com/tbud/x/container/set"
 	"os"
 	"path/filepath"
@@ -20,11 +19,12 @@ type NexusCleanTask struct {
 var dirSet = set.StringSet{}
 
 func init() {
-	nst := &NexusCleanTask{JarKeepNum: 20, WarKeepNum: 20, Test: true}
+	nst := &NexusCleanTask{JarKeepNum: 20, WarKeepNum: 20, Test: false}
 
 	Task("clean", Group("nexus"), nst, Usage("Clean nexus repository useless package."))
 
-	// Task("cleantest", Group("nexus"), Tasks("nexus.clean"), Config{"test": true}, Usage("Test nexus repository useless package."))
+	nstTest := &NexusCleanTask{JarKeepNum: 20, WarKeepNum: 20, Test: true}
+	Task("test", Group("nexus"), nstTest, Usage("Test nexus repository useless package."))
 }
 
 func (n *NexusCleanTask) Execute() (err error) {
