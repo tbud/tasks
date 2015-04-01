@@ -67,7 +67,7 @@ func (n *NexusCleanTask) Execute() (err error) {
 		if !info.IsDir() {
 			ext := filepath.Ext(info.Name())
 			switch ext {
-			case ".jar", ".war":
+			case ".jar", ".war", ".pom":
 				dir := filepath.Dir(path)
 				dir = filepath.Dir(dir)
 				if !dirSet.Has(dir) {
