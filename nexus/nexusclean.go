@@ -109,7 +109,7 @@ func (v versions) Len() int {
 }
 
 func (v versions) Less(i, j int) bool {
-	return v[i].ModTime().UnixNano() < v[j].ModTime().UnixNano()
+	return v[i].ModTime().Before(v[j].ModTime())
 }
 
 func (v versions) Swap(i, j int) {
