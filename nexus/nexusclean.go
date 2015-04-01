@@ -7,13 +7,16 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 )
 
 type NexusCleanTask struct {
 	RepositoryDir string
 	JarKeepNum    int
 	WarKeepNum    int
-	Test          bool
+	JarKeepDays   int
+	WarKeepDays   int
+	Test          bool // test or real do remove action
 }
 
 var dirSet = set.StringSet{}
@@ -35,14 +38,29 @@ func (n *NexusCleanTask) Execute() (err error) {
 		}
 	}
 
+	var (
+		lastRootPath string
+		lastDirInfo  os.FileInfo
+		isWarPath    bool
+		vs           versions
+	)
+
 	filepath.Walk(reposDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			Log.Error("walk path err: %v", err)
 			return nil
 		}
 
+		if info.Name() == ".nexus" && info.IsDir() {
+			return filepath.SkipDir
+		}
+
 		dir := filepath.Dir(path)
 		if dirSet.Has(dir) {
+			if info.IsDir() {
+				vs = append(vs, info)
+			}
+
 			return filepath.SkipDir
 		}
 
@@ -52,14 +70,30 @@ func (n *NexusCleanTask) Execute() (err error) {
 			case ".jar", ".war":
 				dir := filepath.Dir(path)
 				dir = filepath.Dir(dir)
-				dirSet.Add(dir)
+				if !dirSet.Has(dir) {
+					dirSet.Add(dir)
+					// do last root path clean
+					if len(vs) > 0 {
+						if isWarPath {
+							cleanPath(lastRootPath, vs, n.WarKeepNum, n.WarKeepDays, n.Test)
+						} else {
+							cleanPath(lastRootPath, vs, n.JarKeepNum, n.JarKeepDays, n.Test)
+						}
+						vs = vs[:0]
+					}
 
-				if ext == ".war" {
-					cleanPath(dir, n.WarKeepNum, n.Test)
+					// save last root info
+					lastRootPath = dir
+					vs = append(vs, lastDirInfo)
+					isWarPath = ext == ".war"
 				} else {
-					cleanPath(dir, n.JarKeepNum, n.Test)
+					if ext == ".war" {
+						isWarPath = true
+					}
 				}
 			}
+		} else {
+			lastDirInfo = info
 		}
 
 		return nil
@@ -82,33 +116,37 @@ func (v versions) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
 }
 
-func cleanPath(root string, keepNum int, test bool) {
-	v := versions{}
+func cleanPath(root string, vs versions, keepNum int, keepDays int, test bool) {
+	fmt.Printf("path '%s' version num %d\n", root, len(vs))
 
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if root == path {
-			return nil
+	if len(vs) > keepNum {
+		sort.Sort(vs)
+		keeps := len(vs) - keepNum
+		removeVersions := vs[0:keeps]
+		keepVersions := vs[keeps:]
+
+		t := time.Now()
+		t = t.AddDate(0, 0, -keepDays)
+
+		var keepForDays versions
+		for i, r := range removeVersions {
+			if r.ModTime().After(t) {
+				keepForDays = removeVersions[i:]
+				removeVersions = removeVersions[0:i]
+				break
+			}
 		}
-
-		if info.IsDir() {
-			v = append(v, info)
-		}
-
-		return filepath.SkipDir
-	})
-
-	fmt.Printf("path '%s' version num %d\n", root, len(v))
-
-	if len(v) > keepNum {
-		sort.Sort(v)
-		keeps := len(v) - keepNum
-		removeVersions := v[0:keeps]
-		keepVersions := v[keeps:]
 
 		dealWithRemoveVersion(removeVersions, root, test)
-		dealWithKeepVersion(keepVersions)
+
+		if len(keepForDays) > 0 {
+			dealWithKeepVersion(keepForDays, "days")
+		}
+		dealWithKeepVersion(keepVersions, "num")
 	} else {
-		dealWithKeepVersion(v)
+		if test {
+			dealWithKeepVersion(vs, "num")
+		}
 	}
 }
 
@@ -116,7 +154,7 @@ func dealWithRemoveVersion(removeVersions versions, path string, test bool) {
 	fmt.Println("Will removed versioins:")
 	for _, remove := range removeVersions {
 		if test {
-			fmt.Printf("%s\n", remove.Name())
+			fmt.Printf("%s\t\t%s\n", remove.Name(), remove.ModTime().Format("2006-01-02 15:04:05.999"))
 		} else {
 			rd := filepath.Join(path, remove.Name())
 			fmt.Printf("remove path '%s'\n", rd)
@@ -125,10 +163,10 @@ func dealWithRemoveVersion(removeVersions versions, path string, test bool) {
 	}
 }
 
-func dealWithKeepVersion(keepVersions versions) {
-	fmt.Println("Will keeped versions:")
+func dealWithKeepVersion(keepVersions versions, reason string) {
+	fmt.Printf("Will keeped for %s:\n", reason)
 	for _, keep := range keepVersions {
-		fmt.Printf("%s\n", keep.Name())
+		fmt.Printf("%s\t\t%s\n", keep.Name(), keep.ModTime().Format("2006-01-02 15:04:05.999"))
 	}
 }
 
@@ -143,6 +181,14 @@ func (n *NexusCleanTask) Validate() error {
 
 	if n.WarKeepNum == 0 {
 		return fmt.Errorf("war keep num must large than 0")
+	}
+
+	if n.JarKeepDays == 0 {
+		return fmt.Errorf("jar keep day must large than 0")
+	}
+
+	if n.WarKeepDays == 0 {
+		return fmt.Errorf("war keep day must large than 0")
 	}
 
 	return nil

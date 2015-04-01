@@ -1,10 +1,22 @@
 import _ "github.com/tbud/tasks/nexus"
 
+Task("test", func() error {
+	return RunTask("nexus.test", Config{
+		"repositoryDir": "/Users/mind/.m2/repository",
+		"jarKeepNum": 2,
+		"warKeepNum": 2,
+		"jarKeepDays": 30,
+		"warKeepDays": 30,
+	})
+})
+
 Task("default", func() error {
 	err := RunTask("nexus.test", Config{
 		"repositoryDir": "/data/sonatype-work/nexus/storage/releases",
-		"jarKeepNum": 20,
-		"warKeepNum": 20,
+		"jarKeepNum": 600,
+		"warKeepNum": 60,
+		"jarKeepDays": 600,
+		"warKeepDays": 60,
 	})
 
 	if err != nil {
@@ -13,25 +25,43 @@ Task("default", func() error {
 
 	return RunTask("nexus.test", Config{
 		"repositoryDir": "/data/sonatype-work/nexus/storage/snapshots",
-		"jarKeepNum": 2,
-		"warKeepNum": 2,
+		"jarKeepNum": 3,
+		"warKeepNum": 3,
+		"jarKeepDays": 3,
+		"warKeepDays": 3,
 	})
 })
 
 Task("clean", func() error {
-	err := RunTask("nexus.clean", Config{
-		"repositoryDir": "/data/sonatype-work/nexus/storage/releases",
-		"jarKeepNum": 20,
-		"warKeepNum": 20,
+	#err := RunTask("nexus.clean", Config{
+	#	"repositoryDir": "/data/sonatype-work/nexus/storage/releases",
+	#	"jarKeepNum": 600,
+	#	"warKeepNum": 60,
+	#	"jarKeepDays": 600,
+	#	"warKeepDays": 60,
+	#})
+
+	#if err != nil {
+	#	return err
+	#}
+
+	return RunTask("nexus.clean", Config{
+		"repositoryDir": "/data/sonatype-work/nexus/storage/snapshots",
+		"jarKeepNum": 3,
+		"warKeepNum": 3,
+		"jarKeepDays": 3,
+		"warKeepDays": 3,
+	})
+})
+
+Task("push", func() error {
+	err := RunTask("bud.dist", Config{
+		"binName": "nexushelper",
 	})
 
 	if err != nil {
 		return err
 	}
 
-	return RunTask("nexus.clean", Config{
-		"repositoryDir": "/data/sonatype-work/nexus/storage/snapshots",
-		"jarKeepNum": 2,
-		"warKeepNum": 2,
-	})
+	return Exec("scp", "budist/linux_amd64/nexushelper", "nexus@172.19.0.160:~")
 })
