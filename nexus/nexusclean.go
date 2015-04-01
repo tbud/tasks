@@ -51,10 +51,6 @@ func (n *NexusCleanTask) Execute() (err error) {
 			return nil
 		}
 
-		if info.Name() == ".nexus" && info.IsDir() {
-			return filepath.SkipDir
-		}
-
 		dir := filepath.Dir(path)
 		if dirSet.Has(dir) {
 			if info.IsDir() {
