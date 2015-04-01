@@ -154,7 +154,7 @@ func dealWithRemoveVersion(removeVersions versions, path string, test bool) {
 	fmt.Println("Will removed versioins:")
 	for _, remove := range removeVersions {
 		if test {
-			fmt.Printf("%s\t\t%s\n", remove.Name(), remove.ModTime().Format("2006-01-02 15:04:05.999"))
+			fmt.Printf("%s\t%s\n", remove.ModTime().Format("2006-01-02 15:04:05.999"), remove.Name())
 		} else {
 			rd := filepath.Join(path, remove.Name())
 			fmt.Printf("remove path '%s'\n", rd)
@@ -166,7 +166,7 @@ func dealWithRemoveVersion(removeVersions versions, path string, test bool) {
 func dealWithKeepVersion(keepVersions versions, reason string) {
 	fmt.Printf("Will keeped for %s:\n", reason)
 	for _, keep := range keepVersions {
-		fmt.Printf("%s\t\t%s\n", keep.Name(), keep.ModTime().Format("2006-01-02 15:04:05.999"))
+		fmt.Printf("%s\t%s\n", keep.ModTime().Format("2006-01-02 15:04:05.999"), keep.Name())
 	}
 }
 
