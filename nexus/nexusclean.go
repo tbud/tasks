@@ -2,12 +2,13 @@ package nexus
 
 import (
 	"fmt"
-	. "github.com/tbud/bud/context"
-	"github.com/tbud/x/container/set"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	. "github.com/tbud/bud/context"
+	"github.com/tbud/x/container/set"
 )
 
 type NexusCleanTask struct {

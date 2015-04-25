@@ -1,0 +1,18 @@
+import _ "github.com/tbud/tasks/proxy"
+
+Task("default", Tasks("proxy.run"))
+
+
+Task("push", func() (err error) {
+	if err = RunTask("bud.dist", Config{
+		"binName": "proxy",
+	}); err != nil {
+		return err
+	}
+
+	if err = Exec("scp", "budist/linux_amd64/proxy", "root@172.17.8.6:~"); err != nil {
+		return err
+	}
+
+	return Exec("scp", "/Users/mind/ofwork/code/git/data-transform/target/data-transform-1.0.0-SNAPSHOT.jar", "root@172.17.8.6:~")
+})
